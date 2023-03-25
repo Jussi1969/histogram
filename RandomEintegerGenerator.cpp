@@ -3,6 +3,6 @@
 
 Hist::EInteger RandomEintegerGenerator::operator()()
 {
-	int iRnd = rand() % 4 + 1;
+	int iRnd = rand() % 5;
 	return (Hist::EInteger)iRnd;
 }

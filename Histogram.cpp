@@ -2,12 +2,14 @@
 
 #include <algorithm>
 #include <map>
-#include <random>
+//#include <random>
 #include <stdexcept> 
 
 using namespace std;
 
 namespace Hist {
+
+	// *********************  HistogramBase class  **********************************
 
 	HistogramBase::HistogramBase(std::unique_ptr<Logger> logger)
 	{
@@ -26,19 +28,31 @@ namespace Hist {
 
 	HistogramBase::~HistogramBase() {}
 
-	// *********************  Histogram  **********************************
-	bool sort_values(int i, int j) { return (i < j); }
+	// *********************  Histogram class **********************************
+
+	EInteger calculateMode(const std::map<EInteger, int>& countMap);
 
 	Histogram::Histogram(unique_ptr<Logger> logger) :
 		HistogramBase(std::move(logger))
 	{
+		m_countMap = { 
+			{EInteger::Zero , 0},
+			{EInteger::One , 0},
+			{EInteger::Two , 0},
+			{EInteger::Three , 0},
+			{EInteger::Four , 0}
+		};
 	}
 
-	Histogram::Histogram(const HistogramBase& other) : HistogramBase(other)
+	Histogram::Histogram(const Histogram& other) 
+		: HistogramBase(other),
+		m_countMap(other.m_countMap)
 	{
 	}
 
-	Histogram::Histogram(HistogramBase&& other) : HistogramBase(other)
+	Histogram::Histogram(Histogram&& other) 
+		: HistogramBase(other),
+		m_countMap(other.m_countMap)
 	{
 	}
 
@@ -50,49 +64,51 @@ namespace Hist {
 	{
 		if ( val< EInteger::Zero || val > EInteger::Four)
 			throw out_of_range("Given value is out of required range");
-		m_values.push_back(val);
-		std::sort(m_values.begin(), m_values.end(), sort_values);
+		m_countMap[val]++;
 	}
 
 	EInteger Histogram::getMode() const
 	{
-		if (m_values.size()<1)
+		if (m_countMap.size()<1)
 			throw length_error("Histogram has no data. Cannot calculate value.");
 
-		std::map<EInteger, int> counterMap;
-		for (auto val : m_values)
-			counterMap[val]++;
-		EInteger mostFrequentEnu = EInteger::Undefined;
-		int countMostFrequent = 0;
-		for (auto it = counterMap.begin(); it != counterMap.end(); it++)
-		{
-			if (it->second > countMostFrequent)
-			{
-				countMostFrequent = it->second;
-				mostFrequentEnu = it->first;
-			}
-		}
-		return mostFrequentEnu;
+		return calculateMode(m_countMap);
 	}
 
 	EInteger Histogram::getMinValue() const
 	{
-		if (m_values.size() < 1)
+		if (m_countMap.size() < 1)
 			throw length_error("Histogram has no data. Cannot calculate value.");
-
-		if (m_values.size() > 0)
-			return m_values[0];
+		for (auto iter = m_countMap.begin(); iter != m_countMap.end(); ++iter) {
+			if (iter->second > 0)
+				return iter->first;
+		}
 		return EInteger::Undefined;
 	}
 
 	// Return the largest value in the data set
 	EInteger Histogram::getMaxValue() const
 	{
-		if (m_values.size() < 1)
+		if (m_countMap.size() < 1)
 			throw length_error("Histogram has no data. Cannot calculate value.");
-		if (m_values.size() > 0)
-			return m_values.back();
+		for (auto iter = m_countMap.rbegin(); iter != m_countMap.rend(); ++iter) {
+			if (iter->second > 0)
+				return iter->first;
+		}
 		return EInteger::Undefined;
 	}
 
+	EInteger calculateMode(const std::map<EInteger, int>& countMap)
+	{
+		int biggestCount = 0;
+		EInteger biggestType = EInteger::Undefined;
+		for (auto iter = countMap.begin(); iter != countMap.end(); ++iter) {
+			if (iter->second > biggestCount)
+			{
+				biggestCount = iter->second;
+				biggestType = iter->first;
+			}
+		}
+		return biggestType;
+	}
 } // namespace Hist
